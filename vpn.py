@@ -2,10 +2,6 @@
 import os, sys, time, subprocess
 from datetime import datetime
 
-# Error return
-IS_OK  = 0
-IS_NOK = 1
-
 # Commands
 VPN_CMD  = "cyberghostvpn --openvpn --tcp --connect" # Customize with your VPN CLI cmd
 
