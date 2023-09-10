@@ -42,7 +42,7 @@ if __name__ == '__main__':
 			time.sleep(60) # Check ever 60 sec
 			broken = False
 			os.system("chmod 777 -R /media/share/") # Don't take care of that...
-		printing(+ "Running stop VPN CMD:")
+		printing("Running stop VPN CMD:")
 		subprocess.run(["cyberghostvpn --stop"], shell=True)
 		broken = True
 		time.sleep(5) # Wait to be shure vpn conn is real
