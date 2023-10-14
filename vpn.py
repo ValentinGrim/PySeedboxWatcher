@@ -1,48 +1,65 @@
 #!/usr/bin/python3
+
 import os, sys, time, subprocess
 from datetime import datetime
 
 # Commands
-VPN_CMD  = "cyberghostvpn --openvpn --tcp --connect" # Customize with your VPN CLI cmd
+VPN_CMD = "cyberghostvpn --torrent --country-code NL --openvpn --tcp --connect"
+DELUGED = "/usr/bin/deluged -d -l /var/log/deluge/daemon.log -L warning"
+DEL_WEB = "/usr/bin/deluge-web -p 9092 -l /var/log/deluge/web.log -L warning"
 
-def printing(string):
-	print("[" + datetime.now().strftime("%Y-%m-%d %H:%M:%S") + "] " = string)
+def dating():
+	return str("[" + datetime.now().strftime("%Y-%m-%d %H:%M:%S") + "] ")
 
 if __name__ == '__main__':
 	if os.getuid():
-		printing("Please run as ROOT")
-		sys.exit(IS_NOK)
+		print(dating() + "Please run as ROOT")
+		sys.exit(1)
 	else:
-		printing("ROOT test is ok...")
+		print(dating() + "ROOT test is ok...")
 
-	printing("Disabling IPV6...") # Me don't want IPV6 to be usable
+	print(dating() + "Disabling IPV6...")
 	os.system("sysctl -w net.ipv6.conf.all.disable_ipv6=1")
 
 	main_ip = subprocess.getoutput("curl -s ifconfig.io")
-	printing("Main IP is : " + main_ip)
+	print(dating() + "Main IP is : " + main_ip)
+	inited = False
+	deluged = None
 
 	while True:
-		printing("Running VPN_CMD :")
+		print(dating() + "Running VPN_CMD :")
 		subprocess.run([VPN_CMD], shell=True)
 		broken = False
 		while True:
+			if not inited:
+				deluged = subprocess.Popen(DELUGED)
+				time.sleep(1)
+				subprocess.run(DEL_WEB)
+				inited = True
+    
 			current_ip = ""
-			while not current_ip.strip():	# Sometime it fail so...
+			retry = 10
+			while not current_ip.strip():
 				current_ip = subprocess.getoutput("curl -s ifconfig.io")
 				time.sleep(0.2)
+				if retry == 0:
+					current_ip = main_ip
+					break
+				retry -= 1
 
 			if ((subprocess.getoutput("cyberghostvpn --status") != "VPN connection found.") or
                     	    (current_ip == main_ip)):
-				if broken: # This mean after calling vpn, current ip is main ip, and that's wrong
-					printing("VPN restarting doesn't seems to work, shutting down to protect my ip")
-					os.system("shutdown now")
-				printing("VPN Connection is broken, restarting...")
+				if broken:
+					print(dating() + "VPN restarting doesn't seems to work, rebooting...")
+					os.system("cyberghostvpn --stop")
+					os.system("reboot")
+				print(dating() + "VPN Connection is broken, restarting...")
 				break
-			printing("Current IP is : " + current_ip)
-			time.sleep(60) # Check ever 60 sec
+			print(dating() + "Current IP is : " + current_ip)
+			time.sleep(60)
 			broken = False
-			os.system("chmod 777 -R /media/share/") # Don't take care of that...
-		printing("Running stop VPN CMD:")
+			os.system("chmod 777 -R /mnt/drive/")
+		print(dating() + "Running stop VPN CMD:")
 		subprocess.run(["cyberghostvpn --stop"], shell=True)
 		broken = True
-		time.sleep(5) # Wait to be shure vpn conn is real
+		time.sleep(5)
